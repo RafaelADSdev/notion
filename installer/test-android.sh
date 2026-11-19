@@ -4,14 +4,14 @@ set -euo pipefail
 package=br.com.margem.app
 mkdir -p target/android-smoke
 trap 'adb exec-out screencap -p > target/android-smoke/final.png || true
-    adb logcat -d -s AndroidRuntime RustStdoutStderr > target/android-smoke/runtime.log || true' EXIT
+    adb logcat -d -s AndroidRuntime RustStdoutStderr Margem GameActivity android-activity > target/android-smoke/runtime.log || true' EXIT
 adb install target/installer/Margem-android.apk
 adb shell wm size 480x900
 adb shell wm density 160
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard
 adb shell am start -W -n "$package/com.google.androidgamesdk.GameActivity"
-sleep 4
+sleep 9
 adb exec-out screencap -p > target/android-smoke/inicio.png
 if ! adb shell pidof "$package"; then
     adb logcat -d -s AndroidRuntime RustStdoutStderr

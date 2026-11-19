@@ -14,18 +14,24 @@ const IME_START: &str = "\u{200b}";
 
 #[no_mangle]
 fn android_main(android: AndroidApp) {
+    android_logger::init_once(android_logger::Config::default()
+        .with_tag("Margem")
+        .with_max_level(log::LevelFilter::Info));
+    log::info!("Abrindo o Margem");
     let path = android.internal_data_path()
+        .filter(|dir| !dir.as_os_str().is_empty())
         .map(|dir| dir.join("workspace.json"))
         .ok_or_else(|| "A pasta de dados do Android não está disponível.".to_owned());
     let options = eframe::NativeOptions {
         android_app: Some(android.clone()),
+        renderer: eframe::Renderer::Wgpu,
         ..Default::default()
     };
     if let Err(error) = eframe::run_native("Margem", options, Box::new(move |creation| {
         let workspace = Margem::with_storage(&creation.egui_ctx, None, || path);
         Ok(Box::new(MobileMargem { workspace, android, field: None, last_input: None }))
     })) {
-        eprintln!("Não foi possível abrir o Margem: {error}");
+        log::error!("Não foi possível abrir o Margem: {error}");
     }
 }
 
