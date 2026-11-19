@@ -5,6 +5,7 @@ plugins {
 android {
     namespace = 'br.com.margem.app'
     compileSdk = 36
+    ndkVersion = '27.2.12479018'
 
     defaultConfig {
         applicationId = 'br.com.margem.app'
@@ -18,5 +19,6 @@ android {
 }
 
 dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.games:games-activity:4.4.0'
 }

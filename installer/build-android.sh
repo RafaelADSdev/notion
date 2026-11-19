@@ -32,4 +32,4 @@ done
 
 gradle --project-dir android --no-daemon assembleDebug
 mkdir -p target/installer
-cp android/build/outputs/apk/debug/android-debug.apk target/installer/Margem-android.apk
+cp android/build/outputs/apk/debug/Margem-debug.apk target/installer/Margem-android.apk

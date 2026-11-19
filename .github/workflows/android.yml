@@ -23,6 +23,9 @@ jobs:
           gradle-version: '9.3.1'
       - name: Preparar SDK e targets Rust
         run: |
+          tools=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+          echo "$(dirname "$tools")" >> "$GITHUB_PATH"
+          export PATH="$(dirname "$tools"):$PATH"
           sdkmanager 'platforms;android-36' 'ndk;27.2.12479018'
           rustup target add aarch64-linux-android x86_64-linux-android
       - name: Compilar APK
@@ -32,3 +35,12 @@ jobs:
           name: Margem-Android
           path: target/installer/Margem-android.apk
           if-no-files-found: error
+      - name: Preparar KVM no runner
+        run: sudo setfacl -m "u:$USER:rw" /dev/kvm
+      - name: Instalar e abrir no emulador
+        uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          script: bash installer/test-android.sh
