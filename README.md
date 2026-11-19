@@ -2,7 +2,7 @@
 
 **Um espaço de trabalho para suas notas, projetos e ideias.**
 
-Escreva em páginas, reúna tarefas em coleções e organize tudo em uma barra lateral com subpáginas e favoritos. O Margem roda no Windows, funciona offline e salva seu espaço de trabalho no próprio computador.
+Escreva em páginas, reúna tarefas em coleções e organize tudo em uma barra lateral com subpáginas e favoritos. O Margem funciona offline e salva seu espaço de trabalho no próprio dispositivo.
 
 **[Baixar para Windows](https://github.com/RafaelADSdev/notion/releases/tag/v0.1.0)** · [Recursos](#o-que-você-pode-fazer) · [Atalhos](#atalhos) · [Compilar](#compilar-no-windows)
 

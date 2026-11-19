@@ -3,7 +3,7 @@
     <uses-feature android:glEsVersion="0x00030000" android:required="true" />
     <application android:label="Margem" android:icon="@drawable/margem"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-        <activity android:name="com.google.androidgamesdk.GameActivity"
+        <activity android:name=".MainActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|density|uiMode">

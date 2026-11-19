@@ -10,7 +10,8 @@ adb shell wm size 480x900
 adb shell wm density 160
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard
-adb shell am start -W -n "$package/com.google.androidgamesdk.GameActivity"
+activity=$(adb shell cmd package resolve-activity --brief "$package" | tail -1 | tr -d '\r')
+adb shell am start -W -n "$activity"
 sleep 9
 adb exec-out screencap -p > target/android-smoke/inicio.png
 if ! adb shell pidof "$package"; then
@@ -18,9 +19,9 @@ if ! adb shell pidof "$package"; then
     exit 1
 fi
 workspace=files/workspace.json
-for y in 42 18 60; do
+for y in 221 197 239; do
     if adb shell run-as "$package" test -f "$workspace"; then break; fi
-    adb shell input tap 436 "$y"
+    adb shell input tap 65 "$y"
     sleep 1
 done
 adb shell run-as "$package" test -f "$workspace"
