@@ -144,8 +144,7 @@ fn collection_views_and_default_appearance() -> [Measurement; 4] {
     let theme = if ui.ctx.style().visuals.dark_mode { "Escuro" } else { "Claro" };
     let theme = check("Tema ao abrir pela primeira vez", json!(theme));
     let zoom = ui.ctx.zoom_factor();
-    let measured_zoom = if zoom.fract() == 0.0 { json!(zoom as u32) } else { json!(zoom) };
-    let zoom = check("Zoom inicial", measured_zoom);
+    let zoom = check("Zoom inicial", json!((f64::from(zoom) * 100.0).round() / 100.0));
 
     ui.click("Projetos pessoais", 0);
     assert!(!ui.labels("Etiqueta").is_empty(), "A tabela precisa renderizar suas colunas");

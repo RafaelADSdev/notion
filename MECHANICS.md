@@ -10,7 +10,7 @@
 
 ## Valores estimados
 
-A busca de strings e o mapa estático localizaram a infraestrutura do desktop. Os valores originais de tema e zoom ficam sem confirmação porque a captura não contém as preferências executadas. O Margem começa com tema claro e fator de escala 1,0, ambos configuráveis. Cores, tamanhos de janela, dados de exemplo e rótulos fazem parte do design próprio.
+A busca de strings e o mapa estático localizaram a infraestrutura do desktop. Os valores originais de tema e zoom ficam sem confirmação porque a captura não contém as preferências executadas. O Margem começa com tema claro e fator de escala 0,85, ambos configuráveis. Cores, tamanhos de janela, dados de exemplo e rótulos fazem parte do design próprio.
 
 ## Alcance
 

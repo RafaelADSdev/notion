@@ -204,7 +204,7 @@ impl Default for Settings {
         Self {
             name: "Meu espaço".to_owned(),
             theme: Theme::Light,
-            zoom: 1.0,
+            zoom: 0.85,
             compact: false,
             restore_last: true,
             show_sidebar: true,

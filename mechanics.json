@@ -58,7 +58,7 @@
     {
       "name": "Zoom inicial",
       "group": "Preferências",
-      "value": 1,
+      "value": 0.85,
       "unit": "fator de escala",
       "estimated": true
     }
