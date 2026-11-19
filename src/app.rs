@@ -78,15 +78,17 @@ pub struct Margem {
 impl Margem {
     pub fn new(ctx: &Context, screenshot: Option<PathBuf>) -> Self {
         design::install_fonts(ctx);
-        let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
-        let folder = if manifest.join("Cargo.toml").exists() {
-            manifest.to_path_buf()
+        let (path, read) = if screenshot.is_some() {
+            (PathBuf::new(), Ok(None))
         } else {
-            std::env::current_exe().ok().and_then(|exe| exe.parent().map(Path::to_path_buf))
-                .unwrap_or_else(|| PathBuf::from("."))
+            match workspace_path() {
+                Ok(path) => {
+                    let read = load(&path);
+                    (path, read)
+                }
+                Err(error) => (PathBuf::new(), Err(error)),
+            }
         };
-        let path = folder.join("workspace.json");
-        let read = if screenshot.is_some() { Ok(None) } else { load(&path) };
         let storage_blocked = read.is_err();
         let notice = read.as_ref().err().map(|error| {
             (format!("Não foi possível abrir as páginas salvas: {error}"), Instant::now())
@@ -121,6 +123,9 @@ impl Margem {
         }
         let result = (|| -> Result<(), Box<dyn std::error::Error>> {
             let data = serde_json::to_vec_pretty(&self.space)?;
+            if let Some(folder) = self.path.parent() {
+                std::fs::create_dir_all(folder)?;
+            }
             let temporary = self.path.with_extension("json.tmp");
             std::fs::write(&temporary, data)?;
             std::fs::rename(temporary, &self.path)?;
@@ -997,6 +1002,24 @@ impl eframe::App for Margem {
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.save();
     }
+}
+
+fn workspace_path() -> Result<PathBuf, String> {
+    if cfg!(target_os = "windows") && !cfg!(debug_assertions) {
+        let local = std::env::var_os("LOCALAPPDATA")
+            .filter(|folder| !folder.is_empty())
+            .ok_or_else(|| "A pasta LOCALAPPDATA do Windows não está disponível.".to_owned())?;
+        return Ok(PathBuf::from(local).join("Margem").join("workspace.json"));
+    }
+
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let folder = if manifest.join("Cargo.toml").exists() {
+        manifest.to_path_buf()
+    } else {
+        std::env::current_exe().ok().and_then(|exe| exe.parent().map(Path::to_path_buf))
+            .unwrap_or_else(|| PathBuf::from("."))
+    };
+    Ok(folder.join("workspace.json"))
 }
 
 fn load(path: &Path) -> Result<Option<Workspace>, String> {
