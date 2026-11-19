@@ -13,6 +13,7 @@ jobs:
   macos:
     name: macOS (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 12
     strategy:
       fail-fast: false
       matrix:
@@ -23,6 +24,12 @@ jobs:
             arch: x86_64
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            target
+          key: macos-${{ matrix.arch }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
       - name: Compilar, testar e empacotar
         run: bash installer/build-macos.sh
       - uses: actions/upload-artifact@v4

@@ -32,7 +32,7 @@ cat > "$bundle/Info.plist" <<EOF
 EOF
 
 plutil -lint "$bundle/Info.plist"
-lipo -verify_arch "$arch" "$bundle/MacOS/Margem"
+lipo "$bundle/MacOS/Margem" -verify_arch "$arch"
 codesign --force --sign - "$stage/Margem.app"
 codesign --verify --strict "$stage/Margem.app"
 ln -s /Applications "$stage/Applications"
