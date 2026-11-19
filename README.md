@@ -55,7 +55,10 @@ git clone https://github.com/RafaelADSdev/notion.git
 Set-Location notion
 
 .\.cargo\rustc-windows.cmd
-$cargo = '.\target\rustup\toolchains\1.97.1-x86_64-pc-windows-gnullvm\bin\cargo.exe'
+$toolchain = (Resolve-Path '.\target\rustup\toolchains\1.97.1-x86_64-pc-windows-gnullvm\bin').Path
+$cargo = Join-Path $toolchain 'cargo.exe'
+$env:RUSTC = Join-Path $toolchain 'rustc.exe'
+$env:RUSTDOC = Join-Path $toolchain 'rustdoc.exe'
 & $cargo test --locked
 & $cargo build --release --locked
 .\target\release\margem-desktop.exe
@@ -72,6 +75,13 @@ Depois de compilar em modo release, execute o compilador do NSIS 3.13 na raiz do
 ```
 
 O instalador é gerado em `target\installer\Margem-Setup-0.1.0-x64.exe`.
+
+## macOS e Android
+
+Os pacotes de macOS e Android são gerados pelo [GitHub Actions](https://github.com/RafaelADSdev/notion/actions).
+
+- **macOS.** No Mac, com Xcode Command Line Tools e Rustup instalados, rode `bash installer/build-macos.sh`. Abra o DMG em `target/installer/` e arraste **Margem** para **Aplicativos**. Use `arm64` para Apple Silicon e `x86_64` para Intel. O workspace fica em `~/Library/Application Support/Margem/workspace.json`. O app usa assinatura ad hoc e não tem notarização da Apple.
+- **Android.** O APK inclui ARM64 e x86-64, requer Android 6.0 ou posterior e usa o armazenamento privado do aplicativo. Para compilar no Linux ou macOS, prepare Android SDK 36, NDK 27.2.12479018, JDK 17, Gradle 9.3.1 e os targets Rust `aarch64-linux-android` e `x86_64-linux-android`. Com `ANDROID_HOME` apontando para o SDK, rode `bash installer/build-android.sh`. O APK de teste é assinado pelo Gradle com a chave de debug.
 
 ### Por dentro do projeto
 

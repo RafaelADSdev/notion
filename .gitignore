@@ -3,3 +3,6 @@
 /inspection/
 /workspace.json
 /workspace.json.tmp
+/android/.gradle/
+/android/build/
+/android/local.properties

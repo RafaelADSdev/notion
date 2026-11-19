@@ -207,7 +207,7 @@ impl Default for Settings {
             zoom: 0.85,
             compact: false,
             restore_last: true,
-            show_sidebar: true,
+            show_sidebar: !cfg!(target_os = "android"),
             show_favorites: true,
             high_contrast: false,
             wide_documents: false,

@@ -1,0 +1,22 @@
+plugins {
+    id 'com.android.application' version '9.1.1'
+}
+
+android {
+    namespace = 'br.com.margem.app'
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = 'br.com.margem.app'
+        minSdk = 23
+        targetSdk = 34
+        versionCode = 1
+        versionName = '0.1.0'
+    }
+
+    sourceSets.main.jniLibs.srcDirs = ['../target/android/jniLibs']
+}
+
+dependencies {
+    implementation 'androidx.games:games-activity:4.4.0'
+}

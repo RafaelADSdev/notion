@@ -1,13 +1,9 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
-mod app;
-mod model;
-mod templates;
-mod ui;
-
 use std::path::PathBuf;
 
 use eframe::egui::ViewportBuilder;
+use margem_desktop::{app, ui};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args_os().skip(1);

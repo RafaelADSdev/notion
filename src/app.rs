@@ -77,11 +77,19 @@ pub struct Margem {
 
 impl Margem {
     pub fn new(ctx: &Context, screenshot: Option<PathBuf>) -> Self {
+        Self::with_storage(ctx, screenshot, workspace_path)
+    }
+
+    pub(crate) fn with_storage(
+        ctx: &Context,
+        screenshot: Option<PathBuf>,
+        storage: impl FnOnce() -> Result<PathBuf, String>,
+    ) -> Self {
         design::install_fonts(ctx);
         let (path, read) = if screenshot.is_some() {
             (PathBuf::new(), Ok(None))
         } else {
-            match workspace_path() {
+            match storage() {
                 Ok(path) => {
                     let read = load(&path);
                     (path, read)
@@ -141,6 +149,10 @@ impl Margem {
     }
 
     fn select(&mut self, ctx: &Context, target: View) {
+        if cfg!(target_os = "android") && self.space.settings.show_sidebar {
+            self.space.settings.show_sidebar = false;
+            self.dirty(ctx);
+        }
         if self.view == target { return; }
         self.history.truncate(self.history_at + 1);
         self.history.push(target);
@@ -988,7 +1000,7 @@ impl Margem {
                     .show(ctx, |ui| { panel(p).show(ui, |ui| { ui.label(message); }); });
             }
         }
-        if self.dirty_since.is_some_and(|since| since.elapsed() >= Duration::from_millis(500))
+        if self.dirty_since.is_some_and(|since| cfg!(target_os = "android") || since.elapsed() >= Duration::from_millis(500))
             || ctx.input(|input| input.viewport().close_requested()) { self.save(); }
         self.capture(ctx);
     }
@@ -1010,6 +1022,11 @@ fn workspace_path() -> Result<PathBuf, String> {
             .filter(|folder| !folder.is_empty())
             .ok_or_else(|| "A pasta LOCALAPPDATA do Windows não está disponível.".to_owned())?;
         return Ok(PathBuf::from(local).join("Margem").join("workspace.json"));
+    }
+    if cfg!(target_os = "macos") && !cfg!(debug_assertions) {
+        let home = std::env::var_os("HOME").filter(|path| !path.is_empty())
+            .ok_or_else(|| "A pasta pessoal do macOS não está disponível.".to_owned())?;
+        return Ok(PathBuf::from(home).join("Library/Application Support/Margem/workspace.json"));
     }
 
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
