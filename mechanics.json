@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "values": [
+    {
+      "name": "Abas para páginas",
+      "group": "Navegação",
+      "value": true,
+      "source": "app.asar/.webpack/main/index.js, módulo 10019, D.attachTab e D.closeActiveTab, ev_69f2b6caf17757366aa0290fa6458d941ce479c9db343e5c4e437072e43954fb"
+    },
+    {
+      "name": "Navegação de volta e avanço",
+      "group": "Navegação",
+      "value": true,
+      "source": "app.asar/.webpack/main/index.js, módulo 10019, D.handleAppCommandNavigation e D.handleSwipeNavigation, ev_69f2b6caf17757366aa0290fa6458d941ce479c9db343e5c4e437072e43954fb"
+    },
+    {
+      "name": "Busca rápida",
+      "group": "Navegação",
+      "value": true,
+      "source": "app.asar, ponte __electronApi.openQuickSearchResult e __electronApi.onOpenSearch, ev_69f2b6caf17757366aa0290fa6458d941ce479c9db343e5c4e437072e43954fb"
+    },
+    {
+      "name": "Menu de blocos",
+      "group": "Editor",
+      "value": "/",
+      "source": "https://www.notion.com/help/what-is-a-block"
+    },
+    {
+      "name": "Transformar blocos",
+      "group": "Editor",
+      "value": true,
+      "source": "https://www.notion.com/help/what-is-a-block"
+    },
+    {
+      "name": "Reordenar blocos",
+      "group": "Editor",
+      "value": true,
+      "source": "https://www.notion.com/help/what-is-a-block"
+    },
+    {
+      "name": "Itens da coleção abrem como páginas",
+      "group": "Coleções",
+      "value": true,
+      "source": "https://www.notion.com/help/intro-to-databases"
+    },
+    {
+      "name": "Visualizações implementadas",
+      "group": "Coleções",
+      "value": "Tabela e quadro",
+      "source": "https://www.notion.com/help/intro-to-databases"
+    },
+    {
+      "name": "Tema ao abrir pela primeira vez",
+      "group": "Preferências",
+      "value": "Claro",
+      "estimated": true
+    },
+    {
+      "name": "Zoom inicial",
+      "group": "Preferências",
+      "value": 1,
+      "unit": "fator de escala",
+      "estimated": true
+    }
+  ]
+}

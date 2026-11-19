@@ -1,0 +1,10 @@
+# Keep the Windows build self-contained with Rust’s MinGW libraries and LLVM linker.
+# Run .cargo/rustc-windows.cmd to provision the local toolchain after a clean checkout.
+[build]
+rustc = "target/rustup/toolchains/1.97.1-x86_64-pc-windows-gnullvm/bin/rustc.exe"
+rustdoc = "target/rustup/toolchains/1.97.1-x86_64-pc-windows-gnullvm/bin/rustdoc.exe"
+
+[target.x86_64-pc-windows-gnullvm]
+linker = "rust-lld"
+# Bundle the unwinder so build scripts and the app can run outside the toolchain.
+rustflags = ["-Clink-self-contained=yes", "-Ctarget-feature=+crt-static"]
