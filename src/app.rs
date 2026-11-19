@@ -21,7 +21,7 @@ use crate::templates::{self, Field, Property, Template};
 use calendar::Calendar;
 use settings::SettingsTab;
 
-use crate::ui::{self as design, action, editable, nav, page_row, panel, right, section, Palette};
+use crate::ui::{self as design, action, editable, nav_icon, page_row, panel, right, section, Icon, Palette};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum View {
@@ -245,7 +245,7 @@ impl Margem {
     }
 
     fn toolbar(&mut self, ctx: &Context, p: Palette) {
-        TopBottomPanel::top("toolbar").frame(Frame::new().fill(p.white).inner_margin(egui::Margin::symmetric(17, 7)))
+        TopBottomPanel::top("toolbar").frame(Frame::new().fill(p.paper).inner_margin(egui::Margin::symmetric(14, 6)))
             .show(ctx, |ui| ui.horizontal(|ui| {
                 if !self.space.settings.show_sidebar {
                     if action(ui, p, "Menu", false).clicked() {
@@ -269,18 +269,18 @@ impl Margem {
                     View::Trash => "Lixeira",
                     View::Page(id) => self.space.page(id).map_or("Página", |page| page.title()),
                 };
-                let width = (ui.available_width() - 130.0).clamp(0.0, 270.0);
-                ui.allocate_ui_with_layout(vec2(width, 25.0), Layout::left_to_right(Align::Center), |ui| {
+                let label_width = (ui.available_width() - 123.0).max(0.0);
+                ui.allocate_ui_with_layout(vec2(label_width, 29.0), Layout::left_to_right(Align::Center), |ui| {
                     ui.add(egui::Label::new(p.label(label)).truncate()).on_hover_text(label);
                 });
                 right(ui, |ui| {
-                    if action(ui, p, "+ Nova página", self.view != View::Home).clicked() {
+                    if action(ui, p, "+ Nova página", false).on_hover_text("Nova página (Ctrl+N)").clicked() {
                         self.create(ctx, None, PageKind::Document, true);
                     }
                 });
             }));
         if self.tabs.is_empty() { return; }
-        TopBottomPanel::top("tabs").frame(Frame::new().fill(p.paper).inner_margin(egui::Margin::symmetric(16, 5)))
+        TopBottomPanel::top("tabs").frame(Frame::new().fill(p.side).inner_margin(egui::Margin::symmetric(12, 3)))
             .show(ctx, |ui| {
                 ScrollArea::horizontal().id_salt("tab-scroll").show(ui, |ui| ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 4.0;
@@ -288,10 +288,10 @@ impl Margem {
                         let Some(page) = self.space.page(id) else { continue };
                         let label = page.title().to_owned();
                         let active = self.view == View::Page(id);
-                        let tab = Frame::new().fill(if active { p.tint } else { p.paper })
-                            .corner_radius(7).inner_margin(egui::Margin::symmetric(3, 2))
+                        let tab = Frame::new().fill(if active { p.paper } else { p.side })
+                            .corner_radius(4).inner_margin(egui::Margin::symmetric(5, 2))
                             .show(ui, |ui| ui.horizontal(|ui| {
-                                ui.allocate_ui_with_layout(vec2(144.0, 23.0), Layout::left_to_right(Align::Center), |ui| {
+                                ui.allocate_ui_with_layout(vec2(128.0, 23.0), Layout::left_to_right(Align::Center), |ui| {
                                     let title = if active { p.heading(&label, 13.0).color(p.accent) } else { p.label(&label) };
                                     if ui.add(Button::new(title).frame(false).truncate())
                                         .on_hover_text(&label).clicked() { self.select(ctx, View::Page(id)); }
@@ -302,7 +302,7 @@ impl Margem {
                             let rect = tab.response.rect;
                             ui.painter().line_segment(
                                 [rect.left_bottom() + vec2(4.0, 0.0), rect.right_bottom() - vec2(4.0, 0.0)],
-                                egui::Stroke::new(2.0, p.accent),
+                                egui::Stroke::new(2.0_f32, p.accent),
                             );
                         }
                     }
@@ -312,27 +312,35 @@ impl Margem {
 
     fn sidebar(&mut self, ctx: &Context, p: Palette) {
         if !self.space.settings.show_sidebar { return; }
-        SidePanel::left("sidebar").resizable(false).exact_width(228.0)
-            .frame(Frame::new().fill(p.side).inner_margin(egui::Margin::symmetric(13, 14)))
+        let width = (ctx.screen_rect().width() * 0.31).clamp(154.0, 226.0);
+        SidePanel::left("sidebar").resizable(false).exact_width(width)
+            .frame(Frame::new().fill(p.side).inner_margin(egui::Margin::symmetric(12, 13)))
             .show(ctx, |ui| {
+                ui.spacing_mut().item_spacing.y = 3.0;
                 ui.horizontal(|ui| {
                     design::logo(ui, p);
-                    ui.label(p.heading("Margem", 17.0));
                     right(ui, |ui| {
-                        if ui.add(Button::new("‹").frame(false)).on_hover_text("Ocultar barra lateral (Ctrl+E)").clicked() {
+                        if ui.add(Button::new("«").frame(false)).on_hover_text("Ocultar barra lateral (Ctrl+E)").clicked() {
                             self.space.settings.show_sidebar = false;
                             self.dirty(ctx);
                         }
+                        let width = ui.available_width();
+                        ui.allocate_ui_with_layout(vec2(width, 28.0), Layout::left_to_right(Align::Center), |ui| {
+                            ui.add(egui::Label::new(p.display("Margem", 20.0)).truncate());
+                        });
                     });
                 });
-                ui.add_space(10.0);
+                ui.add_space(13.0);
                 if design::search_button(ui, p).clicked() { self.start_search(); }
-                let h = if self.space.settings.compact { 24.0 } else { 30.0 };
-                if nav(ui, p, "Início", self.view == View::Home, h).clicked() { self.select(ctx, View::Home); }
-                if nav(ui, p, "Modelos", self.view == View::Templates, h).clicked() { self.select(ctx, View::Templates); }
-                ui.add_space(10.0);
+                ui.add_space(9.0);
+                let h = if self.space.settings.compact { 23.0 } else { 28.0 };
+                if nav_icon(ui, p, "Início", Icon::Home, self.view == View::Home, h).clicked() { self.select(ctx, View::Home); }
+                if nav_icon(ui, p, "Modelos", Icon::Models, self.view == View::Templates, h).clicked() { self.select(ctx, View::Templates); }
+                ui.add_space(9.0);
                 ui.separator();
-                ScrollArea::vertical().id_salt("page-tree").max_height((ui.available_height() - 88.0).max(0.0))
+                ui.add_space(6.0);
+                let footer_height = h * 2.0 + 21.0;
+                ScrollArea::vertical().id_salt("page-tree").max_height((ui.available_height() - footer_height).max(0.0))
                     .auto_shrink([false, false]).show(ui, |ui| {
                         if self.space.settings.show_favorites {
                             let favorites = self.space.pages.iter().filter(|page| page.favorite && self.space.is_live(page.id))
@@ -341,7 +349,7 @@ impl Margem {
                                 section(ui, p, "Favoritos");
                                 for id in favorites {
                                     let title = self.space.page(id).unwrap().title().to_owned();
-                                    if nav(ui, p, &title, self.view == View::Page(id), h).clicked() {
+                                    if nav_icon(ui, p, &title, Icon::Star, self.view == View::Page(id), h).on_hover_text(&title).clicked() {
                                         self.select(ctx, View::Page(id));
                                     }
                                 }
@@ -359,10 +367,10 @@ impl Margem {
                         self.tree(ctx, ui, p, None, 0, h);
                     });
                 ui.separator();
-                if nav(ui, p, "Lixeira", self.view == View::Trash, h).clicked() {
+                if nav_icon(ui, p, "Lixeira", Icon::Trash, self.view == View::Trash, h).clicked() {
                     self.select(ctx, View::Trash);
                 }
-                if nav(ui, p, "Configurações", self.settings_tab.is_some(), h).on_hover_text("Configurações (Ctrl+,)").clicked() {
+                if nav_icon(ui, p, "Configurações", Icon::Settings, self.settings_tab.is_some(), h).on_hover_text("Configurações (Ctrl+,)").clicked() {
                     self.settings_tab = Some(SettingsTab::Appearance);
                 }
             });
@@ -374,22 +382,24 @@ impl Margem {
         for (id, title, kind) in items {
             let has_children = self.space.pages.iter().any(|page| page.parent == Some(id) && !page.trashed);
             let collapsed = self.collapsed.contains(&id);
-            ui.horizontal(|ui| {
+            ui.push_id(("tree", id), |ui| ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = 2.0;
                 ui.add_space((level.min(8) as f32) * 9.0);
                 if has_children {
-                    if ui.add_sized([19.0, row], Button::new(if collapsed { "+" } else { "−" }).frame(false))
+                    let icon = if collapsed { "›" } else { "−" };
+                    if ui.add_sized([16.0, row], Button::new(p.label(icon)).frame(false))
                         .on_hover_text("Mostrar ou ocultar subpáginas").clicked() {
                         if collapsed { self.collapsed.remove(&id); } else { self.collapsed.insert(id); }
                     }
                 } else {
-                    ui.add_space(19.0);
+                    ui.add_space(16.0);
                 }
-                let response = nav(ui, p, &title, self.view == View::Page(id), row).on_hover_text(
+                let response = nav_icon(ui, p, &title, design::page_icon(kind), self.view == View::Page(id), row).on_hover_text(
                     if kind == PageKind::Collection { format!("{title} · Coleção") } else { title.clone() },
                 );
                 if response.clicked() { self.select(ctx, View::Page(id)); }
                 response.context_menu(|ui| { self.page_menu(ctx, ui, id); });
-            });
+            }));
             if has_children && !self.collapsed.contains(&id) { self.tree(ctx, ui, p, Some(id), level + 1, row); }
         }
     }
@@ -420,51 +430,56 @@ impl Margem {
     }
 
     fn home(&mut self, ctx: &Context, ui: &mut Ui, p: Palette) {
-        ui.add_space(12.0);
-        Frame::new().fill(p.tint).corner_radius(16)
-            .inner_margin(egui::Margin::symmetric(25, 24))
-            .show(ui, |ui| {
-                ui.set_width(ui.available_width());
-                section(ui, p, "Seu espaço de trabalho");
-                ui.label(p.heading(&self.space.settings.name, 43.0));
-                ui.add_space(10.0);
-                ui.horizontal_wrapped(|ui| {
-                    if action(ui, p, "+ Criar página", true).clicked() { self.create(ctx, None, PageKind::Document, true); }
-                    if action(ui, p, "+ Criar coleção", false).clicked() { self.create(ctx, None, PageKind::Collection, true); }
-                    if action(ui, p, "Ver modelos", false).clicked() { self.select(ctx, View::Templates); }
-                    if action(ui, p, "Importar Markdown", false).clicked() { self.start_transfer(Transfer::Import); }
-                });
-            });
-        ui.add_space(20.0);
+        ui.add_space(25.0);
+        design::icon_tile(ui, p, Icon::Home, 46.0);
+        ui.add_space(6.0);
+        ui.label(p.display(&self.space.settings.name, if ui.available_width() < 450.0 { 36.0 } else { 48.0 }));
+        ui.add_space(10.0);
+        ui.horizontal_wrapped(|ui| {
+            if action(ui, p, "+ Criar página", true).clicked() { self.create(ctx, None, PageKind::Document, true); }
+            if action(ui, p, "+ Criar coleção", false).clicked() { self.create(ctx, None, PageKind::Collection, true); }
+            if action(ui, p, "Ver modelos", false).clicked() { self.select(ctx, View::Templates); }
+            if action(ui, p, "Importar Markdown", false).clicked() { self.start_transfer(Transfer::Import); }
+        });
+        ui.add_space(24.0);
+        ui.separator();
+        ui.add_space(14.0);
         let live = self.space.pages.iter().filter(|page| self.space.is_live(page.id)).collect::<Vec<_>>();
         let mut by_activity = live.clone();
         by_activity.sort_by_key(|page| std::cmp::Reverse(page.touched));
         let recent = by_activity.iter().take(5).map(|page| (page.id, page.title().to_owned(), page.kind)).collect::<Vec<_>>();
         let favorites = live.iter().filter(|page| page.favorite)
             .map(|page| (page.id, page.title().to_owned(), page.kind)).collect::<Vec<_>>();
-        if ui.available_width() >= 620.0 {
-            ui.scope(|ui| {
-                ui.spacing_mut().item_spacing.x = 16.0;
-                ui.columns(2, |columns| {
-                    self.home_group(ctx, &mut columns[0], p, "Páginas recentes", &recent, "As páginas que você abrir aparecem aqui.");
-                    self.home_group(ctx, &mut columns[1], p, "Favoritos", &favorites, "Marque uma página para encontrá-la aqui.");
+        if ui.available_width() >= 615.0 {
+            let gap = 32.0;
+            let width = ui.available_width() - gap;
+            ui.horizontal_top(|ui| {
+                ui.spacing_mut().item_spacing.x = 0.0;
+                ui.allocate_ui_with_layout(vec2(width * 0.61, 0.0), Layout::top_down(Align::Min), |ui| {
+                    ui.set_width(width * 0.61);
+                    self.home_group(ctx, ui, p, "Páginas recentes", &recent, "As páginas que você abrir aparecem aqui.");
+                });
+                ui.add_space(gap);
+                ui.allocate_ui_with_layout(vec2(width * 0.39, 0.0), Layout::top_down(Align::Min), |ui| {
+                    ui.set_width(width * 0.39);
+                    self.home_group(ctx, ui, p, "Favoritos", &favorites, "Marque uma página para encontrá-la aqui.");
                 });
             });
         } else {
             self.home_group(ctx, ui, p, "Páginas recentes", &recent, "As páginas que você abrir aparecem aqui.");
+            ui.add_space(15.0);
             self.home_group(ctx, ui, p, "Favoritos", &favorites, "Marque uma página para encontrá-la aqui.");
         }
     }
 
     fn home_group(&mut self, ctx: &Context, ui: &mut Ui, p: Palette, title: &str, rows: &[(Id, String, PageKind)], empty: &str) {
-        panel(p).show(ui, |ui| {
-            ui.set_width(ui.available_width());
-            ui.label(p.heading(title, 19.0));
-            ui.add_space(3.0);
-            ui.separator();
-            ui.add_space(2.0);
+        ui.scope(|ui| {
+            ui.spacing_mut().item_spacing.y = 3.0;
+            ui.label(p.heading(title, 17.0));
+            ui.add_space(5.0);
             if rows.is_empty() { ui.label(p.label(empty)); }
-            for (id, name, kind) in rows {
+            for (index, (id, name, kind)) in rows.iter().enumerate() {
+                if index > 0 { ui.separator(); }
                 if page_row(ui, p, name, *kind, "›").clicked() { self.select(ctx, View::Page(*id)); }
             }
         });
@@ -476,26 +491,30 @@ impl Margem {
         let favorite = page.favorite;
         let parent = page.parent.and_then(|parent| self.space.page(parent).map(|page| (parent, page.title().to_owned())));
         let mut changed = false;
-        ui.horizontal(|ui| {
-            if let Some((parent_id, title)) = &parent {
-                if ui.link(title).clicked() { self.select(ctx, View::Page(*parent_id)); }
-                ui.label(p.label("›"));
+        right(ui, |ui| {
+            ui.menu_button("Mais", |ui| { self.page_menu(ctx, ui, id); });
+            if ui.add(Button::new(p.label(if favorite { "★ Favorito" } else { "☆ Favoritar" })).frame(false)).clicked() {
+                self.favorite(ctx, id);
             }
-            section(ui, p, if kind == PageKind::Collection { "Coleção" } else { "Página local" });
-            right(ui, |ui| {
-                ui.menu_button("Mais", |ui| { self.page_menu(ctx, ui, id); });
-                if action(ui, p, if favorite { "★ Favorito" } else { "☆ Favoritar" }, false).clicked() {
-                    self.favorite(ctx, id);
-                }
-            });
+            section(ui, p, if kind == PageKind::Collection { "Coleção" } else { "Página" });
+            if let Some((parent_id, title)) = &parent {
+                ui.label(p.label("›"));
+                if ui.add(Button::new(p.label(title)).frame(false).truncate())
+                    .on_hover_text(title).clicked() { self.select(ctx, View::Page(*parent_id)); }
+            }
         });
         if self.view != View::Page(id) { return; }
         let page = self.space.page_mut(id).unwrap();
-        ui.add_space(if kind == PageKind::Collection { 16.0 } else { 30.0 });
-        let title = ui.add(editable(&mut page.title, "Sem título", FontId::proportional(41.0)).id_salt(("page-title", id)));
+        ui.add_space(if kind == PageKind::Collection { 13.0 } else { 30.0 });
+        design::icon_tile(ui, p, design::page_icon(kind), 47.0);
+        ui.add_space(4.0);
+        let size = if ui.available_width() < 450.0 { 33.0 } else { 44.0 };
+        let title = ui.add(editable(&mut page.title, "Sem título", design::display_font(size))
+            .hint_text(p.display("Sem título", size).color(p.muted))
+            .margin(egui::Margin::ZERO).id_salt(("page-title", id)));
         if std::mem::take(&mut self.focus_title) { title.request_focus(); }
         changed |= title.changed();
-        ui.add_space(8.0);
+        ui.add_space(11.0);
         if kind == PageKind::Collection {
             self.collection(ctx, ui, p, id);
         } else {
@@ -510,9 +529,9 @@ impl Margem {
         }
     }
 
-    fn block_menu(ui: &mut Ui, index: usize, count: usize) -> Option<BlockChange> {
+    fn block_menu(ui: &mut Ui, p: Palette, index: usize, count: usize) -> Option<BlockChange> {
         let mut choice = None;
-        ui.menu_button("⋮", |ui| {
+        ui.menu_button(p.label("⋮"), |ui| {
             ui.menu_button("Transformar em", |ui| {
                 for kind in Kind::ALL {
                     if ui.button(kind.label()).clicked() {
@@ -530,7 +549,7 @@ impl Margem {
             }
             if ui.button("Remover bloco").clicked() { choice = Some(BlockChange::Remove(index)); }
             if choice.is_some() { ui.close_menu(); }
-        });
+        }).response.on_hover_text("Opções do bloco");
         choice
     }
 
@@ -543,14 +562,22 @@ impl Margem {
         for (i, block) in page.blocks.iter_mut().enumerate() {
             if block.kind == Kind::Numbered { list_number += 1; } else { list_number = 0; }
             ui.push_id(block.id, |ui| {
-                ui.horizontal(|ui| {
-                    if let Some(choice) = Self::block_menu(ui, i, count) { operation = Some(choice); }
+                ui.horizontal_top(|ui| {
+                    ui.scope(|ui| {
+                        ui.spacing_mut().button_padding = vec2(5.0, 3.0);
+                        ui.visuals_mut().widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
+                        ui.visuals_mut().widgets.inactive.bg_stroke = egui::Stroke::NONE;
+                        if let Some(choice) = Self::block_menu(ui, p, i, count) { operation = Some(choice); }
+                    });
                     match block.kind {
-                        Kind::Divider => { ui.separator(); return; }
+                        Kind::Divider => {
+                            let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), 22.0), egui::Sense::hover());
+                            ui.painter().hline(rect.x_range(), rect.center().y, egui::Stroke::new(1.0_f32, p.line));
+                            return;
+                        }
                         Kind::Task => { changed |= ui.checkbox(&mut block.checked, "").changed(); }
                         Kind::Bullet => { ui.label("•"); }
                         Kind::Numbered => { ui.label(format!("{list_number}.")); }
-                        Kind::Quote => { ui.label(RichText::new("▍").color(p.accent)); }
                         Kind::Link => {
                             if (block.text.starts_with("https://") || block.text.starts_with("http://"))
                                 && ui.small_button("Abrir").clicked() {
@@ -560,15 +587,30 @@ impl Margem {
                         _ => {}
                     }
                     let font = match block.kind {
-                        Kind::Heading => FontId::proportional(28.0),
-                        Kind::Subheading => FontId::proportional(21.0),
+                        Kind::Heading => design::display_font(27.0),
+                        Kind::Subheading => design::display_font(21.0),
                         Kind::Code => FontId::monospace(14.0),
                         _ => FontId::proportional(16.0),
                     };
                     let placeholder = if block.kind == Kind::Link { "https://…" } else { "Escreva aqui" };
-                    let response = ui.add(TextEdit::multiline(&mut block.text)
-                        .desired_rows(1).font(font).hint_text(placeholder).desired_width(f32::INFINITY)
-                        .frame(block.kind == Kind::Code));
+                    let text_edit = TextEdit::multiline(&mut block.text)
+                        .desired_rows(1).font(font)
+                        .hint_text(p.label(placeholder)).desired_width(f32::INFINITY)
+                        .id_salt("text").frame(false);
+                    let response = match block.kind {
+                        Kind::Quote | Kind::Code => {
+                            let quote = block.kind == Kind::Quote;
+                            let body = Frame::new().fill(if quote { p.tint } else { p.side })
+                                .corner_radius(5).inner_margin(egui::Margin::symmetric(9, 5))
+                                .show(ui, |ui| ui.add(text_edit));
+                            if quote {
+                                let rail = body.response.rect.left_center().x + 2.0;
+                                ui.painter().vline(rail, body.response.rect.y_range().shrink(4.0), egui::Stroke::new(2.0_f32, p.accent));
+                            }
+                            body.inner
+                        }
+                        _ => ui.add(text_edit),
+                    };
                     if self.focus_block == Some(block.id) {
                         response.request_focus();
                         self.focus_block = None;
@@ -580,25 +622,30 @@ impl Margem {
                     if !query.contains('\n') {
                         let hits = Kind::ALL.into_iter().filter(|kind| search_key(kind.label()).contains(&query)).collect::<Vec<_>>();
                         if !hits.is_empty() {
-                            panel(p).show(ui, |ui| ui.horizontal_wrapped(|ui| {
-                                for kind in hits {
-                                    if ui.button(kind.label()).clicked() {
-                                        block.text.clear();
-                                        operation = Some(BlockChange::Convert(i, kind));
+                            panel(p).show(ui, |ui| {
+                                section(ui, p, "Tipo de bloco");
+                                ui.horizontal_wrapped(|ui| {
+                                    for kind in hits {
+                                        if ui.button(kind.label()).clicked() {
+                                            block.text.clear();
+                                            operation = Some(BlockChange::Convert(i, kind));
+                                        }
                                     }
-                                }
-                            }));
+                                });
+                            });
                         }
                     }
                 }
             });
         }
         if count == 0 {
-            let start = ui.add(Button::new(p.label("Escreva aqui")).frame(false));
+            let start = ui.add(Button::new(p.label("Escreva aqui").size(16.0)).frame(false));
             if start.clicked() { operation = Some(BlockChange::Add(Kind::Text)); }
+            ui.label(p.label("Digite / para escolher um tipo de bloco."));
             ui.add_space(8.0);
         }
-        ui.horizontal(|ui| {
+        ui.add_space(5.0);
+        ui.horizontal_wrapped(|ui| {
             if action(ui, p, "+ Texto", false).clicked() { operation = Some(BlockChange::Add(Kind::Text)); }
             ui.menu_button("+ Bloco", |ui| {
                 for kind in Kind::ALL {
@@ -640,7 +687,8 @@ impl Margem {
             .map(|page| (page.id, page.title().to_owned(), page.kind)).collect::<Vec<_>>();
         if !children.is_empty() {
             ui.add_space(12.0);
-            section(ui, p, "SUBPÁGINAS");
+            ui.separator();
+            section(ui, p, "Subpáginas");
             for (child, title, kind) in children {
                 if page_row(ui, p, &title, kind, "›").clicked() { self.select(ctx, View::Page(child)); }
             }
@@ -648,37 +696,45 @@ impl Margem {
     }
 
     fn trash_view(&mut self, ctx: &Context, ui: &mut Ui, p: Palette) {
-        ui.label(p.heading("Lixeira", 36.0));
-        ui.label(p.label("Restaure uma página para voltar a acessá-la."));
+        ui.add_space(16.0);
+        design::icon_tile(ui, p, Icon::Trash, 46.0);
+        ui.label(p.display("Lixeira", 42.0));
+        ui.add_space(8.0);
         let rows = self.space.pages.iter().filter(|page| page.trashed)
-            .map(|page| (page.id, page.title().to_owned(), page.parent)).collect::<Vec<_>>();
-        if rows.is_empty() { ui.label("A lixeira está vazia."); }
-        for (id, title, parent) in rows {
-            panel(p).show(ui, |ui| ui.horizontal(|ui| {
-                ui.label(title);
-                right(ui, |ui| {
-                    if action(ui, p, "Restaurar", false).clicked() {
-                        let is_visible = parent.is_none_or(|item| self.space.is_live(item));
-                        let page = self.space.page_mut(id).unwrap();
-                        if !is_visible { page.parent = None; }
-                        page.trashed = false;
-                        self.space.touch(id);
-                        self.dirty(ctx);
-                        self.notify(ctx, "Página restaurada.");
-                    }
+            .map(|page| (page.id, page.title().to_owned(), page.kind, page.parent)).collect::<Vec<_>>();
+        ui.separator();
+        if rows.is_empty() { ui.label(p.label("A lixeira está vazia.")); }
+        for (id, title, kind, parent) in rows {
+            right(ui, |ui| {
+                if action(ui, p, "Restaurar", false).clicked() {
+                    let is_visible = parent.is_none_or(|item| self.space.is_live(item));
+                    let page = self.space.page_mut(id).unwrap();
+                    if !is_visible { page.parent = None; }
+                    page.trashed = false;
+                    self.space.touch(id);
+                    self.dirty(ctx);
+                    self.notify(ctx, "Página restaurada.");
+                }
+                let width = ui.available_width();
+                ui.allocate_ui_with_layout(vec2(width, 34.0), Layout::left_to_right(Align::Center), |ui| {
+                    design::icon_tile(ui, p, design::page_icon(kind), 24.0);
+                    ui.add(egui::Label::new(p.heading(&title, 14.0)).truncate()).on_hover_text(title);
                 });
-            }));
+            });
+            ui.separator();
         }
     }
     fn search_window(&mut self, ctx: &Context, p: Palette) {
         if !self.search { return; }
         let mut open = self.search;
         let mut chosen = None;
+        let width = (ctx.screen_rect().width() - 52.0).min(490.0);
         egui::Window::new("Buscar no espaço").id(egui::Id::new("search-window")).open(&mut open)
             .anchor(Align2::CENTER_TOP, vec2(0.0, 86.0)).collapsible(false)
-            .resizable(false).fixed_size(vec2(475.0, 0.0)).show(ctx, |ui| {
+            .resizable(false).default_width(width).show(ctx, |ui| {
+                ui.set_width(width);
                 let response = ui.add(TextEdit::singleline(&mut self.query).hint_text("Digite um título ou trecho…")
-                    .desired_width(f32::INFINITY).font(FontId::proportional(17.0)));
+                    .margin(egui::Margin::symmetric(10, 7)).desired_width(f32::INFINITY).font(FontId::proportional(16.0)));
                 if std::mem::take(&mut self.focus_search) { response.request_focus(); }
                 let query = search_key(self.query.trim());
                 let mut matches = self.space.pages.iter().filter(|page| self.space.is_live(page.id))
@@ -695,13 +751,19 @@ impl Margem {
                 if ctx.input(|input| input.key_pressed(egui::Key::Enter)) {
                     chosen = matches.first().map(|row| row.0);
                 }
-                ScrollArea::vertical().max_height(310.0).show(ui, |ui| {
+                ui.add_space(4.0);
+                section(ui, p, if query.is_empty() { "Páginas recentes" } else { "Resultados" });
+                let results_height = (ctx.screen_rect().height() - 280.0).clamp(80.0, 310.0);
+                ScrollArea::vertical().max_height(results_height).show(ui, |ui| {
+                    ui.spacing_mut().item_spacing.y = 2.0;
                     if matches.is_empty() { ui.label(p.label("Nenhuma página encontrada.")); }
                     for (id, title, kind, rank, _) in matches {
                         let trail = if rank == 1 { "Conteúdo" } else { "›" };
                         if page_row(ui, p, &title, kind, trail).clicked() { chosen = Some(id); }
                     }
                 });
+                ui.separator();
+                ui.label(p.label("Enter abre o primeiro resultado · Esc fecha"));
             });
         self.search = open && chosen.is_none();
         if let Some(id) = chosen { self.select(ctx, View::Page(id)); }
@@ -746,9 +808,14 @@ impl Margem {
         egui::Window::new(title).open(&mut open).anchor(Align2::CENTER_CENTER, Vec2::ZERO)
             .collapsible(false).resizable(false).show(ctx, |ui| {
                 ui.label(p.label("Caminho completo do arquivo Markdown"));
+                let width = (ctx.screen_rect().width() - 60.0).min(410.0);
                 ui.add(TextEdit::singleline(&mut self.transfer_path).hint_text("C:\\Documentos\\minha-página.md")
-                    .desired_width(410.0));
-                submitted = ui.add_enabled(!self.transfer_path.trim().is_empty(), Button::new(button)).clicked();
+                    .margin(egui::Margin::symmetric(8, 6)).desired_width(width));
+                ui.add_space(4.0);
+                right(ui, |ui| {
+                    submitted = ui.add_enabled_ui(!self.transfer_path.trim().is_empty(), |ui| action(ui, p, button, true))
+                        .inner.clicked();
+                });
             });
         if !open {
             self.transfer = None;

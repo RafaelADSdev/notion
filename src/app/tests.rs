@@ -6,6 +6,7 @@ struct Interface {
     ctx: Context,
     app: Margem,
     shapes: Vec<egui::epaint::ClippedShape>,
+    size: Vec2,
 }
 
 impl Interface {
@@ -13,7 +14,7 @@ impl Interface {
         let ctx = Context::default();
         // Capture mode starts with sample pages and never writes the user's workspace.
         let app = Margem::new(&ctx, Some(PathBuf::from("ui-test.png")));
-        let mut interface = Self { ctx, app, shapes: Vec::new() };
+        let mut interface = Self { ctx, app, shapes: Vec::new(), size: vec2(1160.0, 740.0) };
         interface.frame(Vec::new(), Modifiers::NONE);
         interface.frame(Vec::new(), Modifiers::NONE);
         interface
@@ -21,7 +22,7 @@ impl Interface {
 
     fn frame(&mut self, events: Vec<Event>, modifiers: Modifiers) {
         self.shapes = self.ctx.run(RawInput {
-            screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(1160.0, 740.0))),
+            screen_rect: Some(Rect::from_min_size(Pos2::ZERO, self.size)),
             events,
             modifiers,
             ..Default::default()
@@ -273,4 +274,36 @@ pub fn verify_mechanics() -> Value {
         .chain(collection_views_and_default_appearance())
         .collect::<std::collections::BTreeMap<_, _>>();
     json!({ "observed": observed, "local_checks": ["Preferências por coleção", "Configurações persistentes", "Escrita em página vazia", "Busca e aplicação de modelos", "Votos locais e calendário por data"] })
+}
+
+#[cfg(test)]
+#[test]
+fn desktop_interface_mechanics() {
+    verify_mechanics();
+}
+
+#[cfg(test)]
+#[test]
+fn narrow_dark_workspace_keeps_navigation_and_editor_reachable() {
+    let mut ui = Interface::new();
+    ui.size = vec2(680.0, 490.0);
+    ui.app.space.settings.theme = Theme::Dark;
+    ui.frame(Vec::new(), Modifiers::NONE);
+    ui.frame(Vec::new(), Modifiers::NONE);
+    assert!(ui.ctx.style().visuals.dark_mode);
+    ui.click("Configurações", 0);
+    assert_eq!(ui.app.settings_tab, Some(SettingsTab::Appearance));
+    // The same window offers fewer logical points at high interface zoom.
+    ui.size = vec2(530.0, 390.0);
+    ui.frame(Vec::new(), Modifiers::NONE);
+    ui.frame(Vec::new(), Modifiers::NONE);
+    ui.click("Editor", 0);
+    assert_eq!(ui.app.settings_tab, Some(SettingsTab::Editor));
+    assert_eq!(ui.labels("Usar largura ampla").len(), 1);
+    ui.key(Key::Escape, Modifiers::NONE);
+    ui.click("+ Criar página", 0);
+    ui.click("Escreva aqui", 0);
+    ui.type_text("Anotação");
+    let View::Page(id) = ui.app.view else { panic!("O editor precisa estar aberto"); };
+    assert_eq!(ui.app.space.page(id).unwrap().blocks[0].text, "Anotação");
 }

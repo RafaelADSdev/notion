@@ -7,7 +7,7 @@ mod ui;
 
 use std::path::PathBuf;
 
-use eframe::egui::{ViewportBuilder, WindowLevel};
+use eframe::egui::ViewportBuilder;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args_os().skip(1);
@@ -27,20 +27,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut viewport = ViewportBuilder::default()
         .with_inner_size([1160.0, 740.0])
-        .with_min_inner_size([680.0, 490.0]);
+        .with_min_inner_size([680.0, 490.0])
+        .with_icon(ui::app_icon());
     if screenshot.is_some() {
         viewport = viewport.with_active(false);
         #[cfg(target_os = "windows")]
-        { viewport = viewport.with_window_level(WindowLevel::AlwaysOnBottom); }
+        { viewport = viewport.with_window_level(eframe::egui::WindowLevel::AlwaysOnBottom); }
     }
-    let mut options = eframe::NativeOptions { viewport, ..Default::default() };
+    let options = eframe::NativeOptions { viewport, ..Default::default() };
     #[cfg(target_os = "macos")]
-    if screenshot.is_some() {
+    let options = if screenshot.is_some() {
         use winit::platform::macos::EventLoopBuilderExtMacOS;
-        options.event_loop_builder = Some(Box::new(|builder| {
-            builder.with_activate_ignoring_other_apps(false);
-        }));
-    }
+        eframe::NativeOptions {
+            event_loop_builder: Some(Box::new(|builder| {
+                builder.with_activate_ignoring_other_apps(false);
+            })),
+            ..options
+        }
+    } else { options };
     let shot = screenshot.clone();
     eframe::run_native("Margem", options, Box::new(move |creation| {
         Ok(Box::new(app::Margem::new(&creation.egui_ctx, shot)))
